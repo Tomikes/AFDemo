@@ -7,9 +7,14 @@
 //
 
 #import "AppDelegate.h"
+#import <AFNetworking.h>
+
+#import "HTMLParser.h"
+#import "HTMLNode.h"
 
 @interface AppDelegate ()
-
+@property (nonatomic, strong) AFHTTPSessionManager *manager;
+@property (nonatomic, strong) NSString *baseurl;
 @end
 
 @implementation AppDelegate
@@ -17,29 +22,76 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+//
+//    self.baseurl = @"https://www.v2ex.com";
+//
+//    [self.manager GET:@"/go/python?p=5" parameters:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id _Nonnull responseObject) {
+//        
+// NSString *htmlString = [[NSString alloc] initWithData:responseObject encoding:NSUTF8StringEncoding];
+//        NSLog(@"%@",htmlString);
+//
+//        NSError *error = nil;
+//      
+//        HTMLParser *parser = [[HTMLParser alloc] initWithString:htmlString error:&error];
+//        if (error) {
+//            NSLog(@"Error: %@", error);
+//            return;
+//        }
+//
+//        HTMLNode *bodyNode = [parser body];
+//        NSArray *spanNodes = [bodyNode findChildTags:@"div"];
+//        
+//        for (HTMLNode *spanNode in spanNodes) {
+//            if ([[spanNode getAttributeNamed:@"class"] isEqualToString:@"content"]) {
+//                NSArray *cells = [spanNode findChildTags:@"div"];
+//                //寻找每一个cell
+//                for (HTMLNode *cell in cells) {
+//                    if ([[cell getAttributeNamed:@"class"] isEqualToString:@"cell"]) {
+//                        
+//                        HTMLNode *sd = [cell findChildTag:@"span"];
+//                        
+//                        if ([[sd getAttributeNamed:@"class"] isEqualToString:@"item_title"]) {
+//                           
+//                            
+//                            NSLog(@"%@",[sd rawContents]);
+//                        }
+////                        NSLog(@"%@",[cell rawContents]);
+//                    }
+//                }
+//                
+//            }
+//        }
+//        
+//    }failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error){
+//        NSLog(@"e:%@",error);
+//    }];
+    
     return YES;
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
-}
-
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-}
-
-- (void)applicationWillEnterForeground:(UIApplication *)application {
-    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-}
-
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+- (void)setBaseurl:(NSString *)baseurl{
+    _baseurl =baseurl;
+    
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLCache *cache = [[NSURLCache alloc] initWithMemoryCapacity:10 * 1024 * 1024
+                                                      diskCapacity:50 * 1024 * 1024
+                                                          diskPath:nil];
+    [config setURLCache:cache];
+    self.manager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString: baseurl] sessionConfiguration:config];
+    self.manager.requestSerializer = [AFJSONRequestSerializer serializer];
+    
+    AFHTTPResponseSerializer *responseSerializer = [AFHTTPResponseSerializer serializer];
+//    responseSerializer.removesKeysWithNullValues = YES;//json
+    
+    self.manager.responseSerializer = responseSerializer;
+    //only html
+    self.manager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
+    //
+    [self.manager.requestSerializer setValue:@"application/json;charset=UTF-8" forHTTPHeaderField:@"Content-Type"];
+//      [self.manager.requestSerializer setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+//NSURLRequestUseProtocolCachePolicy
+    self.manager.requestSerializer.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
+     self.manager.requestSerializer.timeoutInterval = 15;
 }
 
 @end
